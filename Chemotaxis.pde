@@ -46,15 +46,13 @@ class agent {
       }
     }
    
-    if (count > 0) {
-      if (Math.random() > flipChance) {
+    if (count > 0 && Math.random() > flipChance) {
         dx = dx / count + (int)(Math.random() * 2 - 0.5);
         dy = dy / count + (int)(Math.random() * 2 - 0.5);
         if (Math.random() < flipChance)
           dx *= -1;
         if (Math.random() < flipChance)
           dy *= -1;
-      }
     }
 
     else {
@@ -96,7 +94,7 @@ void setup() {
 void draw() {
   background(0);
 
-  // Draw grid
+  // grid
   for (int i = 0; i <= CANVAS_SIZE; i += CELL_SIZE) {
     fill(255);
     noStroke();
@@ -108,7 +106,7 @@ void draw() {
   fill(0, 255, 0);
   rect(CELL_SIZE * (GRID_SIZE - 1) + 5, CELL_SIZE * (GRID_SIZE - 1) + 5, CELL_SIZE - 5, CELL_SIZE - 5);
 
-  // Show and move agents
+  // show + move agents
   for (int i = 0; i < bob.length; i++) {
     bob[i].show();
     bob[i].move();
@@ -116,14 +114,14 @@ void draw() {
 
   genTime++;
 
-  // Selection logic
+  // selection logic
   if (genTime >= genLength) {
     topMoves.clear();
     for (int i = 0; i < bob.length; i++) {
       bob[i].evaluateFitness();
     }
 
-    // Sort agents by fitness (descending)
+    // sort by fitness
     for (int i = 0; i < bob.length - 1; i++) {
       for (int j = i + 1; j < bob.length; j++) {
         if (bob[j].fitness > bob[i].fitness) {
@@ -141,7 +139,7 @@ void draw() {
       bestBob.add(new ArrayList<int[]>(bob[0].movementHistory));
      
     if (!bestBob.isEmpty()) {
-      // Replace the last (worst) entry in topMoves with the most recent best from bestBob
+      // replace worst entry in topMoves with most recent best from bestBob
       topMoves.set(topMoves.size() - 1, new ArrayList<int[]>(bestBob.get(bestBob.size() - 1)));
     }
    
