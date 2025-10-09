@@ -3,8 +3,8 @@ import java.util.Arrays;
 agent[] bob = new agent[10];
 
 int CELL_SIZE = 20;
-int GRID_SIZE = 800 / CELL_SIZE;
 int CANVAS_SIZE = 800;
+int GRID_SIZE = CANVAS_SIZE / CELL_SIZE;
 
 int genLength = 5 * GRID_SIZE;
 int genTime = 0;
