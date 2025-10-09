@@ -4,7 +4,7 @@ agent[] bob = new agent[10];
 
 int CELL_SIZE = 20;
 int GRID_SIZE = 800 / CELL_SIZE;
-int CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
+int CANVAS_SIZE = 800;
 
 int genLength = 5 * GRID_SIZE;
 int genTime = 0;
