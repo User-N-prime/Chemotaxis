@@ -56,7 +56,8 @@ class agent {
       dx = new int[]{-1, 0, 1}[(int)(Math.random() * 3)];
       dy = new int[]{-1, 0, 1}[(int)(Math.random() * 3)];
     }
-
+    dx = round(dx);
+    dy = round(dy);
     x += dx;
     y += dy;
     x = constrain(x, 0, GRID_SIZE - 1);
