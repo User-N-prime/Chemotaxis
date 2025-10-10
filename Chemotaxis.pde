@@ -31,6 +31,7 @@ class agent {
   void show() {
     fill(255, 0, 0, 150);
     rect(CELL_SIZE * x + 5, CELL_SIZE * y + 5, CELL_SIZE - 5, CELL_SIZE - 5);
+    println("Agent at (" + x + ", " + y + ")");
   }
 
   void move() {
