@@ -115,7 +115,7 @@ void draw() {
   // selection logic
   if (genTime >= genLength) {
     for (int i = 0; i < bob.length; i++) {
-      bob[i].dis();
+      bob[i].dis;
     }
 
     // sort bob[] by dis
