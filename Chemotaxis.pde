@@ -46,8 +46,8 @@ class agent {
     }
 
     if (count > 0 && Math.random() > flipChance) {
-      dx = dx / count + (int)(Math.random() * 2 - 0.5);
-      dy = dy / count + (int)(Math.random() * 2 - 0.5);
+      dx = dx / count + new int[]{-1, 0, 1}[(int)(Math.random() * 3)];
+      dy = dy / count + new int[]{-1, 0, 1}[(int)(Math.random() * 3)];
       if (Math.random() < flipChance) dx *= -1;
       if (Math.random() < flipChance) dy *= -1;
     }
