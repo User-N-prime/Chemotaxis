@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 agent[] bob = new agent[10];
 
 int CELL_SIZE = 50;
@@ -123,7 +121,16 @@ void draw() {
       bob[i].dis();
     }
 
-    Arrays.sort(bob, (a, b) -> Double.compare(b.dis, a.dis));
+    // sort bob[] by fitness descending (manual bubble sort)
+    for (int i = 0; i < bob.length - 1; i++) {
+      for (int j = 0; j < bob.length - i - 1; j++) {
+        if (bob[j].dis < bob[j + 1].dis) {
+          agent temp = bob[j];
+          bob[j] = bob[j + 1];
+          bob[j + 1] = temp;
+        }
+      }
+    }
 
     for (int i = 0; i < bob.length / 2; i++) {
       for (int j = 0; j < genLength; j++) {
