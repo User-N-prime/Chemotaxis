@@ -82,11 +82,8 @@ class agent {
   }
 }
 
-void settings() {
-  size(CANVAS_SIZE + 5, CANVAS_SIZE + 5);
-}
-
 void setup() {
+  size(805, 805);
   frameRate(10);
   for (int i = 0; i < bob.length; i++)
     bob[i] = new agent();
