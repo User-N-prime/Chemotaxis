@@ -68,7 +68,7 @@ class agent {
     }
   }
 
-  void dis() {
+  void fitness() {
     int tx = GRID_SIZE - 1;
     int ty = GRID_SIZE - 1;
     dis = 1.0 / (dist(x, y, tx, ty) + 1);
@@ -115,10 +115,10 @@ void draw() {
   // selection logic
   if (genTime >= genLength) {
     for (int i = 0; i < bob.length; i++) {
-      bob[i].dis();
+      bob[i].fitness();
     }
 
-    // sort bob[] by dis
+    // sort bob[] by fitness
     for (int i = 0; i < bob.length - 1; i++) {
       for (int j = 0; j < bob.length - i - 1; j++) {
         if (bob[j].dis < bob[j + 1].dis) {
