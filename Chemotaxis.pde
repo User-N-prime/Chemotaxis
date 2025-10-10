@@ -118,7 +118,7 @@ void draw() {
       bob[i].dis();
     }
 
-    // sort bob[] by fitness descending (manual bubble sort)
+    // sort bob[] by dis
     for (int i = 0; i < bob.length - 1; i++) {
       for (int j = 0; j < bob.length - i - 1; j++) {
         if (bob[j].dis < bob[j + 1].dis) {
@@ -143,9 +143,11 @@ void draw() {
       }
       bestBobCount++;
 
-      for (int j = 0; j < genLength; j++) {
-        topMoves[topMoves.length - 1][j][0] = bestBob[bestBobCount - 1][j][0];
-        topMoves[topMoves.length - 1][j][1] = bestBob[bestBobCount - 1][j][1];
+      if (bestBobCount > 0 && topmoves.length > 0) {
+        for (int j = 0; j < genLength; j++) {
+          topMoves[topMoves.length - 1][j][0] = bestBob[bestBobCount - 1][j][0];
+          topMoves[topMoves.length - 1][j][1] = bestBob[bestBobCount - 1][j][1];
+        }
       }
     }
 
