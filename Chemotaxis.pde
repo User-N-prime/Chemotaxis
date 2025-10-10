@@ -115,7 +115,7 @@ void draw() {
   // selection logic
   if (genTime >= genLength) {
     for (int i = 0; i < bob.length; i++) {
-      bob[i].dis;
+      bob[i].dis();
     }
 
     // sort bob[] by dis
@@ -143,7 +143,7 @@ void draw() {
       }
       bestBobCount++;
 
-      if (bestBobCount > 0 && topmoves.length > 0) {
+      if (bestBobCount > 0 && topMoves.length > 0) {
         for (int j = 0; j < genLength; j++) {
           topMoves[topMoves.length - 1][j][0] = bestBob[bestBobCount - 1][j][0];
           topMoves[topMoves.length - 1][j][1] = bestBob[bestBobCount - 1][j][1];
