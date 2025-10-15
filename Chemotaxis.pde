@@ -28,10 +28,12 @@ PVector target;
 int mousePressCount = 0;
 boolean simRunning = false;
 
-void setup() {
+void settings() {
   size(cols * cellSize + 100, rows * cellSize);
-  noSmooth();
-  pixelDensity(1);
+}
+
+void setup() {
+  surface.setResizable(true);
   frameRate(10); // slow rate
   target = new PVector(cols / 2, 2); // grid coords
   agents = new Agent[numAgents];
