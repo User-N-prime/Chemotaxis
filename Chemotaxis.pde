@@ -5,10 +5,10 @@ int rows = 20;
 int cellSize = 40;
 int spawnX = cols / 2;
 int spawnY = rows - 2;
-float margin = 4; // fixed pixel margin
+float margin = 4;
 boolean[][] wallGrid = new boolean[cols][rows];
 ArrayList<PVector> noveltyArchive = new ArrayList<PVector>();
-float noveltyThreshold = 5.0; // tweak this based on your grid size
+float noveltyThreshold = 5.0; // tweak based on grid size
 
 int[][] directions = {
   {0, -1}, // up
@@ -28,16 +28,12 @@ PVector target;
 int mousePressCount = 0;
 boolean simRunning = false;
 
-
-void settings() {
+void setup() {
   size(cols * cellSize + 100, rows * cellSize);
   noSmooth();
   pixelDensity(1);
-}
-
-void setup() {
-  frameRate(10); // slow down for grid clarity
-  target = new PVector(cols / 2, 2); // grid coordinates
+  frameRate(10); // slow rate
+  target = new PVector(cols / 2, 2); // grid coords
   agents = new Agent[numAgents];
   for (int i = 0; i < numAgents; i++) {
     agents[i] = new Agent();
@@ -52,7 +48,7 @@ void draw() {
   rect(target.x * cellSize + margin, target.y * cellSize + margin,
      cellSize - 2 * margin, cellSize - 2 * margin);
      
-  fill(150); // gray
+  fill(150);
   noStroke();
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
@@ -61,7 +57,6 @@ void draw() {
       }
     }
   }
-
 
   if (simRunning) {
     for (Agent a : agents) {
@@ -77,7 +72,7 @@ void draw() {
     }
     }
     else {
-      // Show agents frozen
+      // agents frozen
       for (Agent a : agents) {
         a.show();
       }
@@ -91,18 +86,18 @@ void draw() {
 
 void drawGrid() {
   noStroke();
-  fill(255); // white grid lines
+  fill(255);
 
-  // Vertical bars
+  // vert. bars
   for (int i = 1; i <= cols; i++) {
     int x = i * cellSize;
-    rect(x - 1, 0, 2, height); // 2-pixel-wide vertical bar
+    rect(x - 1, 0, 2, height); // 2-pixel vert bar
   }
 
   // Horizontal bars
   for (int j = 1; j < rows; j++) {
     int y = j * cellSize;
-    rect(0, y - 1, cols * cellSize, 2); // 2-pixel-wide horizontal bar
+    rect(0, y - 1, cols * cellSize, 2); // 2-pixel hori. bar
   }
 }
 
