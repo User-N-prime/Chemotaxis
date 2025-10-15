@@ -33,8 +33,6 @@ boolean[][] wallGrid = new boolean[cols][rows];
 
 void settings() {
   size(cols * cellSize + 100, rows * cellSize);
-  noSmooth();
-  pixelDensity(1);
 }
 
 void setup() {
