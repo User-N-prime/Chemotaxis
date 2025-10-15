@@ -30,12 +30,8 @@ boolean simRunning = false;
 
 boolean[][] wallGrid = new boolean[cols][rows];
 
-
-void settings() {
-  size(cols * cellSize + 100, rows * cellSize);
-}
-
 void setup() {
+  size(cols * cellSize + 100, rows * cellSize);
   frameRate(100);
   target = new PVector(cols / 2, 2);
   agents = new Agent[numAgents];
@@ -48,13 +44,14 @@ void draw() {
   background(0);
   drawGrid();
 
-  // Draw target
+  // target
   fill(0, 255, 0);
   noStroke();
-  rect(target.x * cellSize + margin, target.y * cellSize + margin,
-       cellSize - 2 * margin, cellSize - 2 * margin);
+  int tx = (int)target.x;
+  int ty = (int)target.y;
+  rect(tx * cellSize + margin, ty * cellSize + margin, cellSize - 2 * margin, cellSize - 2 * margin);
 
-  // Draw walls
+  // walls
   fill(150);
   noStroke();
   for (int x = 0; x < cols; x++) {
@@ -65,30 +62,25 @@ void draw() {
     }
   }
 
-  // Run agents
+  // run agents
   if (simRunning) {
-    for (Agent a : agents) {
-      a.update();
-      a.show();
+    for (int i = 0; i < numAgents; i++) {
+      agents[i].update();
+      agents[i].show();
     }
 
     frameCountInGen++;
     if (frameCountInGen >= lifespan) {
       evolve();
       frameCountInGen = 0;
-      if (generation >= 10) {
-        mutationRate *= 0.98;
-        mutationRate = constrain(mutationRate, 0.03f, 0.05f);
-      }
       generation++;
     }
-  } else {
-    for (Agent a : agents) {
-      a.show();
-    }
+  }
+  else {
+    for (int i = 0; i < numAgents; i++)
+      agents[i].show();
   }
 
-  // Draw generation text centered between 800–900
   int centerX = cols * cellSize + 50;
   fill(255);
   textAlign(CENTER);
@@ -109,10 +101,17 @@ void drawGrid() {
 }
 
 void evolve() {
+  for (int i = 0; i < numAgents; i++) {
+    while (agents[i].step < lifespan) {
+      agents[i].update();
+    }
+  }
+
+  // stores better half in memory
   int topCount = numAgents / 2;
   Agent[] topAgents = new Agent[topCount];
   for (int i = 0; i < topCount; i++) {
-    float bestFitness = Float.MAX_VALUE;
+    float bestFitness = 999999;
     int bestIndex = -1;
     for (int j = 0; j < numAgents; j++) {
       boolean alreadySelected = false;
@@ -138,26 +137,33 @@ void evolve() {
   agents = newAgents;
 
   for (int i = 0; i < numAgents; i++) {
-    float novelty = computeNovelty(agents[i].behavior);
-    if (novelty > noveltyThreshold && archiveCount < maxArchiveSize) {
-      noveltyArchive[archiveCount] = agents[i].behavior;
-      archiveCount++;
+    if (agents[i].behavior != null) {
+      float novelty = computeNovelty(agents[i].behavior);
+      if (novelty > noveltyThreshold && archiveCount < maxArchiveSize) {
+        noveltyArchive[archiveCount] = agents[i].behavior;
+        archiveCount++;
+      }
     }
   }
 }
 
 float computeNovelty(PVector behavior) {
-  int k = 10;
-  int count = archiveCount;
-  float[] distances = new float[count];
+  if (behavior == null) return Float.MAX_VALUE;
 
-  for (int i = 0; i < count; i++) {
-    distances[i] = PVector.dist(behavior, noveltyArchive[i]);
+  int k = 10;
+  float[] distances = new float[archiveCount];
+  int validCount = 0;
+
+  for (int i = 0; i < archiveCount; i++) {
+    if (noveltyArchive[i] != null) {
+      distances[validCount] = PVector.dist(behavior, noveltyArchive[i]);
+      validCount++;
+    }
   }
 
-  // Bubble sort
-  for (int i = 0; i < count - 1; i++) {
-    for (int j = 0; j < count - i - 1; j++) {
+  // bubble sort
+  for (int i = 0; i < validCount - 1; i++) {
+    for (int j = 0; j < validCount - i - 1; j++) {
       if (distances[j] > distances[j + 1]) {
         float temp = distances[j];
         distances[j] = distances[j + 1];
@@ -167,17 +173,20 @@ float computeNovelty(PVector behavior) {
   }
 
   float novelty = 0;
-  for (int i = 0; i < min(k, count); i++) {
+  for (int i = 0; i < min(k, validCount); i++) {
     novelty += distances[i];
   }
-  return novelty / k;
+  return novelty / max(1, k); // avoid divide by zero
 }
 
 void mousePressed() {
-  int gx = mouseX / cellSize;
-  int gy = mouseY / cellSize;
+  int gx = int(mouseX / cellSize);
+  int gy = int(mouseY / cellSize);
 
-  boolean isTarget = (gx == (int)target.x && gy == (int)target.y);
+  int tx = int(target.x);
+  int ty = int(target.y);
+
+  boolean isTarget = (gx == tx && gy == ty);
   boolean isSpawn = (gx == spawnX && gy == spawnY);
 
   if (gx >= 0 && gx < cols && gy >= 0 && gy < rows && !isTarget && !isSpawn) {
@@ -245,11 +254,12 @@ class Agent {
          cellSize - 2 * margin, cellSize - 2 * margin);
   }
 
-  float getFitness() {
-    float goalDist = dist(gridPos.x, gridPos.y, target.x, target.y);
-    float novelty = computeNovelty(behavior);
-    return 0.5 * goalDist + 0.5 * novelty;
-  }
+float getFitness() {
+if (behavior == null) return Float.MAX_VALUE;
+float goalDist = dist(gridPos.x, gridPos.y, target.x, target.y);
+float novelty = computeNovelty(behavior);
+return 0.5 * goalDist + 0.5 * novelty;
+}
 
   Agent reproduce() {
     return new Agent(this.dna);
