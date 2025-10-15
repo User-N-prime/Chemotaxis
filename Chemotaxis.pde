@@ -3,10 +3,11 @@ int rows = 20;
 int cellSize = 40;
 int spawnX = cols / 2;
 int spawnY = rows - 2;
-float margin = 4; // fixed pixel margin
-boolean[][] wallGrid = new boolean[cols][rows];
-ArrayList<PVector> noveltyArchive = new ArrayList<PVector>();
-float noveltyThreshold = 5.0; // tweak this based on your grid size
+float margin = 4;
+
+Agent[] agents;
+PVector target;
+
 
 int[][] directions = {
   {0, -1}, // up
@@ -18,22 +19,27 @@ int[][] directions = {
 int numAgents = 50;
 int lifespan = 100;
 int generation = 0;
+float mutationRate = 0.05;
 int frameCountInGen = 0;
+int archiveCount = 0;
+int maxArchiveSize = 500;
+PVector[] noveltyArchive = new PVector[maxArchiveSize];
+float noveltyThreshold = 5.0;
 
-Agent[] agents;
-PVector target;
-
-int mousePressCount = 0;
 boolean simRunning = false;
+
+boolean[][] wallGrid = new boolean[cols][rows];
 
 
 void settings() {
   size(cols * cellSize + 100, rows * cellSize);
+  noSmooth();
+  pixelDensity(1);
 }
 
 void setup() {
-  frameRate(10); // slow down for grid clarity
-  target = new PVector(cols / 2, 2); // grid coordinates
+  frameRate(100);
+  target = new PVector(cols / 2, 2);
   agents = new Agent[numAgents];
   for (int i = 0; i < numAgents; i++) {
     agents[i] = new Agent();
@@ -43,12 +49,15 @@ void setup() {
 void draw() {
   background(0);
   drawGrid();
+
+  // Draw target
   fill(0, 255, 0);
   noStroke();
   rect(target.x * cellSize + margin, target.y * cellSize + margin,
-     cellSize - 2 * margin, cellSize - 2 * margin);
-     
-  fill(150); // gray
+       cellSize - 2 * margin, cellSize - 2 * margin);
+
+  // Draw walls
+  fill(150);
   noStroke();
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
@@ -58,47 +67,46 @@ void draw() {
     }
   }
 
-
+  // Run agents
   if (simRunning) {
     for (Agent a : agents) {
       a.update();
       a.show();
     }
- 
+
     frameCountInGen++;
     if (frameCountInGen >= lifespan) {
       evolve();
       frameCountInGen = 0;
+      if (generation >= 10) {
+        mutationRate *= 0.98;
+        mutationRate = constrain(mutationRate, 0.03f, 0.05f);
+      }
       generation++;
     }
+  } else {
+    for (Agent a : agents) {
+      a.show();
     }
-    else {
-      // Show agents frozen
-      for (Agent a : agents) {
-        a.show();
-      }
-    }
+  }
 
-
+  // Draw generation text centered between 800–900
+  int centerX = cols * cellSize + 50;
   fill(255);
   textAlign(CENTER);
-  text("Generation: " + generation, 850, 20);
+  text("Generation: " + generation, centerX, 20);
 }
 
 void drawGrid() {
   noStroke();
-  fill(255); // white grid lines
-
-  // Vertical bars
+  fill(255);
   for (int i = 1; i <= cols; i++) {
     int x = i * cellSize;
-    rect(x - 1, 0, 2, height); // 2-pixel-wide vertical bar
+    rect(x - 1, 0, 2, height);
   }
-
-  // Horizontal bars
   for (int j = 1; j < rows; j++) {
     int y = j * cellSize;
-    rect(0, y - 1, cols * cellSize, 2); // 2-pixel-wide horizontal bar
+    rect(0, y - 1, cols * cellSize, 2);
   }
 }
 
@@ -130,25 +138,28 @@ void evolve() {
     newAgents[i] = parent.reproduce();
   }
   agents = newAgents;
- 
-  for (Agent a : agents) {
-    if (computeNovelty(a.behavior) > noveltyThreshold) {
-      noveltyArchive.add(a.behavior);
+
+  for (int i = 0; i < numAgents; i++) {
+    float novelty = computeNovelty(agents[i].behavior);
+    if (novelty > noveltyThreshold && archiveCount < maxArchiveSize) {
+      noveltyArchive[archiveCount] = agents[i].behavior;
+      archiveCount++;
     }
   }
 }
 
 float computeNovelty(PVector behavior) {
   int k = 10;
-  float[] distances = new float[noveltyArchive.size()];
+  int count = archiveCount;
+  float[] distances = new float[count];
 
-  for (int i = 0; i < noveltyArchive.size(); i++) {
-    distances[i] = PVector.dist(behavior, noveltyArchive.get(i));
+  for (int i = 0; i < count; i++) {
+    distances[i] = PVector.dist(behavior, noveltyArchive[i]);
   }
 
-  // Bubble sort the distances array
-  for (int i = 0; i < distances.length - 1; i++) {
-    for (int j = 0; j < distances.length - i - 1; j++) {
+  // Bubble sort
+  for (int i = 0; i < count - 1; i++) {
+    for (int j = 0; j < count - i - 1; j++) {
       if (distances[j] > distances[j + 1]) {
         float temp = distances[j];
         distances[j] = distances[j + 1];
@@ -157,9 +168,8 @@ float computeNovelty(PVector behavior) {
     }
   }
 
-  // Compute average of k-nearest distances
   float novelty = 0;
-  for (int i = 0; i < min(k, distances.length); i++) {
+  for (int i = 0; i < min(k, count); i++) {
     novelty += distances[i];
   }
   return novelty / k;
@@ -173,7 +183,7 @@ void mousePressed() {
   boolean isSpawn = (gx == spawnX && gy == spawnY);
 
   if (gx >= 0 && gx < cols && gy >= 0 && gy < rows && !isTarget && !isSpawn) {
-    wallGrid[gx][gy] = !wallGrid[gx][gy]; // toggle wall state
+    wallGrid[gx][gy] = !wallGrid[gx][gy];
   }
 }
 
@@ -187,7 +197,6 @@ class Agent {
   PVector gridPos;
   int[][] dna;
   int step = 0;
- 
   PVector behavior;
 
   Agent() {
@@ -200,12 +209,12 @@ class Agent {
   }
 
   Agent(int[][] parentDNA) {
-    gridPos = new PVector(cols / 2, rows - 2);
+    gridPos = new PVector(spawnX, spawnY);
     dna = new int[lifespan][2];
     for (int i = 0; i < lifespan; i++) {
       dna[i][0] = parentDNA[i][0];
       dna[i][1] = parentDNA[i][1];
-      if (Math.random() < 0.01) {
+      if (Math.random() < mutationRate) {
         int dir = (int)(Math.random() * 4);
         dna[i] = directions[dir];
       }
@@ -218,21 +227,19 @@ class Agent {
       int dy = dna[step][1];
       int newX = (int)gridPos.x + dx;
       int newY = (int)gridPos.y + dy;
- 
+
       if (newX >= 0 && newX < cols && newY >= 0 && newY < rows && !wallGrid[newX][newY]) {
         gridPos.x = newX;
         gridPos.y = newY;
       }
       step++;
     }
- 
-    // Update behavior at end of life
+
     if (step == lifespan) {
       behavior = new PVector(gridPos.x, gridPos.y);
     }
   }
 
- 
   void show() {
     fill(255, 0, 0, 150);
     noStroke();
@@ -243,7 +250,7 @@ class Agent {
   float getFitness() {
     float goalDist = dist(gridPos.x, gridPos.y, target.x, target.y);
     float novelty = computeNovelty(behavior);
-    return 0.5 * goalDist + 0.5 * novelty; // hybrid fitness
+    return 0.5 * goalDist + 0.5 * novelty;
   }
 
   Agent reproduce() {
