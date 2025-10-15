@@ -1,163 +1,243 @@
-agent[] bob = new agent[10];
+import java.util.Collections;
 
-int CELL_SIZE = 50;
-int CANVAS_SIZE = 800;
-int GRID_SIZE = CANVAS_SIZE / CELL_SIZE;
+int cols = 20;
+int rows = 20;
+int cellSize = 40;
+int spawnX = cols / 2;
+int spawnY = rows - 2;
+float margin = 4; // fixed pixel margin
+boolean[][] wallGrid = new boolean[cols][rows];
+ArrayList<PVector> noveltyArchive = new ArrayList<PVector>();
+float noveltyThreshold = 5.0; // tweak this based on your grid size
 
-int genLength = 5 * GRID_SIZE;
-int genTime = 0;
-int genCount = 0;
+int[][] directions = {
+  {0, -1}, // up
+  {0, 1},  // down
+  {-1, 0}, // left
+  {1, 0}   // right
+};
 
-float flipChance = 0.6f;
+int numAgents = 50;
+int lifespan = 100;
+int generation = 0;
+int frameCountInGen = 0;
 
-int[][][] topMoves = new int[bob.length / 2][genLength][2];
-int[][][] bestBob = new int[100][genLength][2];
-int bestBobCount = 0;
+Agent[] agents;
+PVector target;
 
-class agent {
-  int x, y;
-  double dis;
-  int stepIndex;
-  int[][] movementHistory;
+int mousePressCount = 0;
+boolean simRunning = false;
 
-  agent() {
-    x = 0;
-    y = 0;
-    dis = 0;
-    stepIndex = 0;
-    movementHistory = new int[genLength][2];
-  }
 
-  void show() {
-    fill(255, 0, 0, 150);
-    rect(CELL_SIZE * x + 5, CELL_SIZE * y + 5, CELL_SIZE - 5, CELL_SIZE - 5);
-    println("Agent at (" + x + ", " + y + ")");
-  }
-
-  void move() {
-    int dx = 0, dy = 0;
-    int count = 0;
-
-    for (int[][] path : topMoves) {
-      if (stepIndex < path.length) {
-        dx += path[stepIndex][0];
-        dy += path[stepIndex][1];
-        count++;
-      }
-    }
-
-    if (count > 0 && Math.random() > flipChance) {
-      dx = dx / count + (int)(Math.random() * 3 - 1);
-      dy = dy / count + (int)(Math.random() * 3 - 1);
-      if (Math.random() < flipChance) dx *= -1;
-      if (Math.random() < flipChance) dy *= -1;
-    }
-    else {
-      dx = new int[]{-1, 0, 1}[(int)(Math.random() * 3)];
-      dy = new int[]{-1, 0, 1}[(int)(Math.random() * 3)];
-    }
-    dx = round(dx);
-    dy = round(dy);
-    x += dx;
-    y += dy;
-    x = constrain(x, 0, GRID_SIZE - 1);
-    y = constrain(y, 0, GRID_SIZE - 1);
-
-    if (stepIndex < genLength) {
-      movementHistory[stepIndex][0] = dx;
-      movementHistory[stepIndex][1] = dy;
-      stepIndex++;
-    }
-  }
-
-  void fitness() {
-    int tx = GRID_SIZE - 1;
-    int ty = GRID_SIZE - 1;
-    dis = 1.0 / (dist(x, y, tx, ty) + 1);
-  }
-
-  void reset() {
-    x = 0;
-    y = 0;
-    dis = 0;
-    stepIndex = 0;
-  }
+void settings() {
+  size(cols * cellSize + 100, rows * cellSize);
+  noSmooth();
+  pixelDensity(1);
 }
 
 void setup() {
-  size(805, 805);
-  frameRate(10);
-  for (int i = 0; i < bob.length; i++)
-    bob[i] = new agent();
+  frameRate(10); // slow down for grid clarity
+  target = new PVector(cols / 2, 2); // grid coordinates
+  agents = new Agent[numAgents];
+  for (int i = 0; i < numAgents; i++) {
+    agents[i] = new Agent();
+  }
 }
 
 void draw() {
   background(0);
-
-  // grid
-  for (int i = 0; i <= CANVAS_SIZE; i += CELL_SIZE) {
-    fill(255);
-    noStroke();
-    rect(i, 0, 5, CANVAS_SIZE + 5);
-    rect(0, i, CANVAS_SIZE + 5, 5);
-  }
-
-  // target
+  drawGrid();
   fill(0, 255, 0);
-  rect(CELL_SIZE * (GRID_SIZE - 1) + 5, CELL_SIZE * (GRID_SIZE - 1) + 5, CELL_SIZE - 5, CELL_SIZE - 5);
-
-  // show + move agents
-  for (int i = 0; i < bob.length; i++) {
-    bob[i].show();
-    bob[i].move();
+  noStroke();
+  rect(target.x * cellSize + margin, target.y * cellSize + margin,
+     cellSize - 2 * margin, cellSize - 2 * margin);
+     
+  fill(150); // gray
+  noStroke();
+  for (int x = 0; x < cols; x++) {
+    for (int y = 0; y < rows; y++) {
+      if (wallGrid[x][y]) {
+        rect(x * cellSize, y * cellSize, cellSize, cellSize);
+      }
+    }
   }
 
-  genTime++;
 
-  // selection logic
-  if (genTime >= genLength) {
-    for (int i = 0; i < bob.length; i++) {
-      bob[i].fitness();
+  if (simRunning) {
+    for (Agent a : agents) {
+      a.update();
+      a.show();
+    }
+ 
+    frameCountInGen++;
+    if (frameCountInGen >= lifespan) {
+      evolve();
+      frameCountInGen = 0;
+      generation++;
+    }
+    }
+    else {
+      // Show agents frozen
+      for (Agent a : agents) {
+        a.show();
+      }
     }
 
-    // sort bob[] by fitness
-    for (int i = 0; i < bob.length - 1; i++) {
-      for (int j = 0; j < bob.length - i - 1; j++) {
-        if (bob[j].dis < bob[j + 1].dis) {
-          agent temp = bob[j];
-          bob[j] = bob[j + 1];
-          bob[j + 1] = temp;
+
+  fill(255);
+  textAlign(CENTER);
+  text("Generation: " + generation, 850, 20);
+}
+
+void drawGrid() {
+  noStroke();
+  fill(255); // white grid lines
+
+  // Vertical bars
+  for (int i = 1; i <= cols; i++) {
+    int x = i * cellSize;
+    rect(x - 1, 0, 2, height); // 2-pixel-wide vertical bar
+  }
+
+  // Horizontal bars
+  for (int j = 1; j < rows; j++) {
+    int y = j * cellSize;
+    rect(0, y - 1, cols * cellSize, 2); // 2-pixel-wide horizontal bar
+  }
+}
+
+void evolve() {
+  int topCount = numAgents / 2;
+  Agent[] topAgents = new Agent[topCount];
+  for (int i = 0; i < topCount; i++) {
+    float bestFitness = Float.MAX_VALUE;
+    int bestIndex = -1;
+    for (int j = 0; j < numAgents; j++) {
+      boolean alreadySelected = false;
+      for (int k = 0; k < i; k++) {
+        if (agents[j] == topAgents[k]) {
+          alreadySelected = true;
+          break;
         }
       }
-    }
-
-    for (int i = 0; i < bob.length / 2; i++) {
-      for (int j = 0; j < genLength; j++) {
-        topMoves[i][j][0] = bob[i].movementHistory[j][0];
-        topMoves[i][j][1] = bob[i].movementHistory[j][1];
+      if (!alreadySelected && agents[j].getFitness() < bestFitness) {
+        bestFitness = agents[j].getFitness();
+        bestIndex = j;
       }
     }
+    topAgents[i] = agents[bestIndex];
+  }
 
-    if (genCount > 0 && bestBobCount < bestBob.length) {
-      for (int j = 0; j < genLength; j++) {
-        bestBob[bestBobCount][j][0] = bob[0].movementHistory[j][0];
-        bestBob[bestBobCount][j][1] = bob[0].movementHistory[j][1];
-      }
-      bestBobCount++;
+  Agent[] newAgents = new Agent[numAgents];
+  for (int i = 0; i < numAgents; i++) {
+    Agent parent = topAgents[i % topCount];
+    newAgents[i] = parent.reproduce();
+  }
+  agents = newAgents;
+ 
+  for (Agent a : agents) {
+    if (computeNovelty(a.behavior) > noveltyThreshold) {
+      noveltyArchive.add(a.behavior);
+    }
+  }
+}
 
-      if (bestBobCount > 0 && topMoves.length > 0) {
-        for (int j = 0; j < genLength; j++) {
-          topMoves[topMoves.length - 1][j][0] = bestBob[bestBobCount - 1][j][0];
-          topMoves[topMoves.length - 1][j][1] = bestBob[bestBobCount - 1][j][1];
-        }
+float computeNovelty(PVector behavior) {
+  int k = 10;
+  ArrayList<Float> distances = new ArrayList<Float>();
+  for (PVector b : noveltyArchive) {
+    distances.add(PVector.dist(behavior, b));
+  }
+  Collections.sort(distances);
+  float novelty = 0;
+  for (int i = 0; i < min(k, distances.size()); i++) {
+    novelty += distances.get(i);
+  }
+  return novelty / k;
+}
+
+void mousePressed() {
+  int gx = mouseX / cellSize;
+  int gy = mouseY / cellSize;
+
+  boolean isTarget = (gx == (int)target.x && gy == (int)target.y);
+  boolean isSpawn = (gx == spawnX && gy == spawnY);
+
+  if (gx >= 0 && gx < cols && gy >= 0 && gy < rows && !isTarget && !isSpawn) {
+    wallGrid[gx][gy] = !wallGrid[gx][gy]; // toggle wall state
+  }
+}
+
+void keyPressed() {
+  if (key == ' ') {
+    simRunning = !simRunning;
+  }
+}
+
+class Agent {
+  PVector gridPos;
+  int[][] dna;
+  int step = 0;
+ 
+  PVector behavior;
+
+  Agent() {
+    gridPos = new PVector(spawnX, spawnY);
+    dna = new int[lifespan][2];
+    for (int i = 0; i < lifespan; i++) {
+      int dir = (int)(Math.random() * 4);
+      dna[i] = directions[dir];
+    }
+  }
+
+  Agent(int[][] parentDNA) {
+    gridPos = new PVector(cols / 2, rows - 2);
+    dna = new int[lifespan][2];
+    for (int i = 0; i < lifespan; i++) {
+      dna[i][0] = parentDNA[i][0];
+      dna[i][1] = parentDNA[i][1];
+      if (Math.random() < 0.01) {
+        int dir = (int)(Math.random() * 4);
+        dna[i] = directions[dir];
       }
     }
+  }
 
-    for (agent a : bob) 
-      a.reset();
+  void update() {
+    if (step < lifespan) {
+      int dx = dna[step][0];
+      int dy = dna[step][1];
+      int newX = (int)gridPos.x + dx;
+      int newY = (int)gridPos.y + dy;
+ 
+      if (newX >= 0 && newX < cols && newY >= 0 && newY < rows && !wallGrid[newX][newY]) {
+        gridPos.x = newX;
+        gridPos.y = newY;
+      }
+      step++;
+    }
+ 
+    // Update behavior at end of life
+    if (step == lifespan) {
+      behavior = new PVector(gridPos.x, gridPos.y);
+    }
+  }
 
-    flipChance -= 0.05f * (float)Math.tanh(genCount / 10.0);
-    genTime = 0;
-    genCount++;
+ 
+  void show() {
+    fill(255, 0, 0, 150);
+    noStroke();
+    rect(gridPos.x * cellSize + margin, gridPos.y * cellSize + margin,
+         cellSize - 2 * margin, cellSize - 2 * margin);
+  }
+
+  float getFitness() {
+    float goalDist = dist(gridPos.x, gridPos.y, target.x, target.y);
+    float novelty = computeNovelty(behavior);
+    return 0.5 * goalDist + 0.5 * novelty; // hybrid fitness
+  }
+
+  Agent reproduce() {
+    return new Agent(this.dna);
   }
 }
