@@ -31,7 +31,7 @@ boolean simRunning = false;
 boolean[][] wallGrid = new boolean[cols][rows];
 
 void setup() {
-  size(cols * cellSize + 100, rows * cellSize);
+	size(cols * cellSize + 100, rows * cellSize);
   frameRate(100);
   target = new PVector(cols / 2, 2);
   agents = new Agent[numAgents];
@@ -44,14 +44,15 @@ void draw() {
   background(0);
   drawGrid();
 
-  // target
+  // Draw target
   fill(0, 255, 0);
   noStroke();
   int tx = (int)target.x;
   int ty = (int)target.y;
-  rect(tx * cellSize + margin, ty * cellSize + margin, cellSize - 2 * margin, cellSize - 2 * margin);
+  rect(tx * cellSize + margin, ty * cellSize + margin,
+       cellSize - 2 * margin, cellSize - 2 * margin);
 
-  // walls
+  // Draw walls
   fill(150);
   noStroke();
   for (int x = 0; x < cols; x++) {
@@ -62,7 +63,7 @@ void draw() {
     }
   }
 
-  // run agents
+  // Run agents
   if (simRunning) {
     for (int i = 0; i < numAgents; i++) {
       agents[i].update();
@@ -75,12 +76,14 @@ void draw() {
       frameCountInGen = 0;
       generation++;
     }
-  }
-  else {
-    for (int i = 0; i < numAgents; i++)
+  } else {
+    for (int i = 0; i < numAgents; i++) {
       agents[i].show();
+    }
+
   }
 
+  // Draw generation text centered between 800–900
   int centerX = cols * cellSize + 50;
   fill(255);
   textAlign(CENTER);
@@ -104,10 +107,8 @@ void evolve() {
   for (int i = 0; i < numAgents; i++) {
     while (agents[i].step < lifespan) {
       agents[i].update();
-    }
   }
-
-  // stores better half in memory
+}
   int topCount = numAgents / 2;
   Agent[] topAgents = new Agent[topCount];
   for (int i = 0; i < topCount; i++) {
@@ -161,7 +162,7 @@ float computeNovelty(PVector behavior) {
     }
   }
 
-  // bubble sort
+  // Bubble sort
   for (int i = 0; i < validCount - 1; i++) {
     for (int j = 0; j < validCount - i - 1; j++) {
       if (distances[j] > distances[j + 1]) {
@@ -255,10 +256,11 @@ class Agent {
   }
 
 float getFitness() {
-if (behavior == null) return Float.MAX_VALUE;
-float goalDist = dist(gridPos.x, gridPos.y, target.x, target.y);
-float novelty = computeNovelty(behavior);
-return 0.5 * goalDist + 0.5 * novelty;
+  if (behavior == null) 
+    return Float.MAX_VALUE;
+  float goalDist = dist(gridPos.x, gridPos.y, target.x, target.y);
+  float novelty = computeNovelty(behavior);
+  return 0.5 * goalDist + 0.5 * novelty;
 }
 
   Agent reproduce() {
